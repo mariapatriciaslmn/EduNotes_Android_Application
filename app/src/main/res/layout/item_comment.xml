@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="10dp"
+    android:background="@drawable/comment_item_background"
+    android:layout_marginBottom="8dp">
+
+    <!-- 🖼 Profile Picture -->
+    <ImageView
+        android:id="@+id/commentUserImage"
+        android:layout_width="45dp"
+        android:layout_height="45dp"
+        android:layout_marginEnd="10dp"
+        android:background="@drawable/profile_circle_border"
+        android:scaleType="centerCrop"
+        android:src="@drawable/profile_logo" />
+
+    <!-- 💬 Comment Details -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical">
+
+        <!-- Username -->
+        <TextView
+            android:id="@+id/commentUsername"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Jane Doe"
+            android:textStyle="bold"
+            android:textColor="#222222"
+            android:textSize="14sp" />
+
+        <!-- Comment -->
+        <TextView
+            android:id="@+id/commentText"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="This is a very helpful note, thanks!"
+            android:textColor="#444444"
+            android:textSize="13sp"
+            android:layout_marginTop="2dp" />
+
+        <!-- Date -->
+        <TextView
+            android:id="@+id/commentDate"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Oct 30, 2025"
+            android:textColor="#888888"
+            android:textSize="11sp"
+            android:layout_marginTop="3dp" />
+    </LinearLayout>
+</LinearLayout>

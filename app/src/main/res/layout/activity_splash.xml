@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/main"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#EFDDDD"
+    tools:context=".SplashActivity">
+
+    <ProgressBar
+        android:id="@+id/starting"
+        style="?android:attr/progressBarStyle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="181dp"
+        android:layout_marginEnd="182dp"
+        android:layout_marginBottom="52dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/eduText"
+        android:layout_width="179dp"
+        android:layout_height="49dp"
+        android:layout_marginStart="127dp"
+        android:layout_marginTop="367dp"
+        android:layout_marginEnd="127dp"
+        android:layout_marginBottom="217dp"
+        android:fontFamily="sans-serif-black"
+        android:gravity="center"
+        android:text="EduNotes"
+        android:textColor="#7B1E1E"
+        android:textSize="40sp"
+        app:layout_constraintBottom_toTopOf="@+id/starting"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <ImageView
+        android:id="@+id/imageView2"
+        android:layout_width="155dp"
+        android:layout_height="169dp"
+        android:layout_marginStart="128dp"
+        android:layout_marginTop="198dp"
+        android:layout_marginEnd="128dp"
+        android:layout_marginBottom="364dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:srcCompat="@drawable/edu_logo" />
+
+</androidx.constraintlayout.widget.ConstraintLayout>
