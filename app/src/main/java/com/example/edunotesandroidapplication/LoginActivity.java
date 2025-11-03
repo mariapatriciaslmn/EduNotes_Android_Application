@@ -49,6 +49,7 @@ public class LoginActivity extends AppCompatActivity {
                 if (userExists) {
                     Toast.makeText(this, "Login successful!", Toast.LENGTH_SHORT).show();
                     Intent intent = new Intent(LoginActivity.this, HomeActivity.class);
+                    intent.putExtra("email", email); // Pass logged-in user's email
                     startActivity(intent);
                     finish(); // close login
                 } else {

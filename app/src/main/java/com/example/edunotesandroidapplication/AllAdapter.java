@@ -16,16 +16,24 @@ import java.util.List;
 // MODEL CLASS (Note)
 // -------------------------
 class Note {
+    private int id;
     private String title;
     private String description;
     private String imageUrl;
     private String uploaderName;
 
-    public Note(String title, String description, String imageUrl, String uploaderName) {
+    // Constructor with all fields (for database use)
+    public Note(int id, String title, String description, String imageUrl) {
+        this.id = id;
         this.title = title;
         this.description = description;
         this.imageUrl = imageUrl;
         this.uploaderName = uploaderName;
+    }
+
+    // Getters
+    public int getId() {
+        return id;
     }
 
     public String getTitle() {
@@ -53,12 +61,9 @@ class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
     private Context context;
     private List<Note> noteList;
 
-    public NoteAdapter(Context context, List<Note> noteList) {
+    public NoteAdapter(ProfileActivity profileActivity, List<Note> noteList) {
         this.context = context;
         this.noteList = noteList;
-    }
-
-    public NoteAdapter(List<Note> noteList) {
     }
 
     @NonNull
@@ -74,7 +79,7 @@ class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
         holder.noteTitle.setText(note.getTitle());
         holder.noteDescription.setText(note.getDescription());
         holder.uploaderName.setText(note.getUploaderName());
-        // For now we can skip the image
+        // For now, skip loading images
     }
 
     @Override
@@ -82,6 +87,7 @@ class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
         return noteList.size();
     }
 
+    // ViewHolder class
     public static class NoteViewHolder extends RecyclerView.ViewHolder {
         TextView noteTitle, noteDescription, uploaderName;
         ImageView noteImage;
@@ -93,5 +99,11 @@ class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
             uploaderName = itemView.findViewById(R.id.uploaderName);
             noteImage = itemView.findViewById(R.id.noteImage);
         }
+    }
+
+    // Update RecyclerView data
+    public void updateData(List<Note> newNotes) {
+        this.noteList = newNotes;
+        notifyDataSetChanged();
     }
 }

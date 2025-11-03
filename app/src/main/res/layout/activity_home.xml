@@ -31,8 +31,8 @@
     <!-- RecyclerView (scrolls by itself) -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/recyclerViewNotes"
-        android:layout_width="409dp"
-        android:layout_height="570dp"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
         android:layout_margin="12dp"
         android:scrollbars="vertical"
         app:layout_constraintBottom_toTopOf="@id/bottom_navigation"
