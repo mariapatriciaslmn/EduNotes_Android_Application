@@ -2,6 +2,7 @@ package com.example.edunotesandroidapplication;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
@@ -43,7 +44,7 @@ public class ProfileActivity extends AppCompatActivity {
             finish();
         });
 
-        // ✅ Initialize
+        // Initialize
         dbHandler = new DBHandler(this);
         profilePicture = findViewById(R.id.profilePicture);
         usernameText = findViewById(R.id.usernameText);
@@ -68,7 +69,7 @@ public class ProfileActivity extends AppCompatActivity {
             noteAdapter = new NoteAdapter(this, userNotesList);
             userNotesRecyclerView.setAdapter(noteAdapter);
             uploadStats.setText("Uploads: " + userNotesList.size());
-            emptyUserNotesText.setVisibility(TextView.GONE);
+            emptyUserNotesText.setVisibility(View.GONE);
         } else {
             uploadStats.setText("Uploads: 0");
             emptyUserNotesText.setVisibility(TextView.VISIBLE);
