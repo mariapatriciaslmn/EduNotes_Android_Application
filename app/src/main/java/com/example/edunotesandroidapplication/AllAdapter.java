@@ -1,6 +1,7 @@
 package com.example.edunotesandroidapplication;
 
 import android.content.Context;
+import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -60,10 +61,20 @@ class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
 
     private Context context;
     private List<Note> noteList;
+    private boolean isSavedList; // new flag to know if this is used in SavedNotesActivity
 
-    public NoteAdapter(ProfileActivity profileActivity, List<Note> noteList) {
+    // --- Constructor for Home / All Notes ---
+    public NoteAdapter(Context context, List<Note> noteList) {
         this.context = context;
         this.noteList = noteList;
+        this.isSavedList = false; // default
+    }
+
+    // --- Constructor for Saved Notes (optional) ---
+    public NoteAdapter(Context context, List<Note> noteList, boolean isSavedList) {
+        this.context = context;
+        this.noteList = noteList;
+        this.isSavedList = isSavedList;
     }
 
     @NonNull
@@ -76,10 +87,25 @@ class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
     @Override
     public void onBindViewHolder(@NonNull NoteViewHolder holder, int position) {
         Note note = noteList.get(position);
+
         holder.noteTitle.setText(note.getTitle());
         holder.noteDescription.setText(note.getDescription());
         holder.uploaderName.setText(note.getUploaderName());
-        // For now, skip loading images
+
+        // Handle click → open details
+        holder.itemView.setOnClickListener(v -> {
+            Intent intent = new Intent(context, NoteDetailsActivity.class);
+            intent.putExtra("title", note.getTitle());
+            intent.putExtra("description", note.getDescription());
+            intent.putExtra("imageUrl", note.getImageUrl());
+            intent.putExtra("uploaderName", note.getUploaderName());
+            context.startActivity(intent);
+        });
+
+        // Optional: visually mark saved notes
+        if (isSavedList) {
+            holder.noteImage.setAlpha(0.9f); // subtle effect for saved notes
+        }
     }
 
     @Override
@@ -87,7 +113,6 @@ class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
         return noteList.size();
     }
 
-    // ViewHolder class
     public static class NoteViewHolder extends RecyclerView.ViewHolder {
         TextView noteTitle, noteDescription, uploaderName;
         ImageView noteImage;
@@ -101,9 +126,9 @@ class NoteAdapter extends RecyclerView.Adapter<NoteAdapter.NoteViewHolder> {
         }
     }
 
-    // Update RecyclerView data
-    public void updateData(List<Note> newNotes) {
-        this.noteList = newNotes;
+    // --- for updating notes dynamically ---
+    public void updateData(List<Note> newList) {
+        this.noteList = newList;
         notifyDataSetChanged();
     }
 }
