@@ -62,6 +62,9 @@ public class HomeActivity extends AppCompatActivity {
 
             } else if (id == R.id.nav_upload) {
                 startActivity(new Intent(this, UploadNotesActivity.class));
+                Intent intent = new Intent (this, UploadNotesActivity.class);
+                intent.putExtra("email", userEmail);
+                startActivity(intent);
                 return true;
 
             } else if (id == R.id.nav_saved) {
@@ -97,6 +100,9 @@ public class HomeActivity extends AppCompatActivity {
         } else {
             findViewById(R.id.emptyText).setVisibility(android.view.View.GONE);
         }
+
+        // Get ALL notes from database
+        List<Note> noteList = dbHandler.getAllNotes();
 
         noteAdapter = new NoteAdapter(this, noteList);
         recyclerView.setAdapter(noteAdapter);
