@@ -11,6 +11,15 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
+
+dependencyResolutionManagement {
+    versionCatalogs {
+        create("libs") {
+            from(files("gradle/libs.versions.toml"))
+        }
+    }
+}
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -19,6 +28,6 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "EduNotes Android(Application"
+rootProject.name = "EduNotes Android Application"
 include(":app")
  
