@@ -6,14 +6,15 @@ import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.edunotesandroidapplication.adapters.NoteAdapter;
+import com.example.edunotesandroidapplication.models.Note;
 
 import java.util.List;
 
@@ -30,24 +31,21 @@ public class ProfileActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_profile);
 
-        // Toolbar setup
-        Toolbar profileToolbar = findViewById(R.id.profileToolbar);
-        setSupportActionBar(profileToolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("Profile");
-        }
+        // Toolbar elements
+        ImageView backButton = findViewById(R.id.backButton);
+        ImageView logoutButton = findViewById(R.id.logoutButton);
+        TextView toolbarTitle = findViewById(R.id.toolbarTitle);
 
-        profileToolbar.setNavigationIcon(R.drawable.baseline_arrow_back_24);
-        profileToolbar.setNavigationOnClickListener(v -> {
-            // Go back to HomeActivity
-            Intent intent = new Intent(ProfileActivity.this, HomeActivity.class);
-            intent.putExtra("email", userEmail);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        // Back button click
+        backButton.setOnClickListener(v -> finish());
+
+        // Logout button click
+        logoutButton.setOnClickListener(v -> {
+            Intent intent = new Intent(ProfileActivity.this, SignUpActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
             startActivity(intent);
-            finish();
         });
 
         // Initialize views
@@ -60,30 +58,17 @@ public class ProfileActivity extends AppCompatActivity {
         // Initialize DBHandler
         dbHandler = new DBHandler(this);
 
-        // Get user email
+        // Get user email from intent
         userEmail = getIntent().getStringExtra("email");
 
-        // Get user name
+        // Get user name from DB
         String userName = dbHandler.getUserNameByEmail(userEmail);
         usernameText.setText(userName != null ? userName : "User");
 
         // Load user's uploaded notes
-        List<Note> userNotesList = dbHandler.getNotesByUser(userEmail);
+        refreshUserNotes();
 
-        // Setup RecyclerView
-        userNotesRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
-
-        if (userNotesList != null && !userNotesList.isEmpty()) {
-            noteAdapter = new NoteAdapter(this, userNotesList);
-            userNotesRecyclerView.setAdapter(noteAdapter);
-            uploadStats.setText("Uploads: " + userNotesList.size());
-            emptyUserNotesText.setVisibility(View.GONE);
-        } else {
-            uploadStats.setText("Uploads: 0");
-            emptyUserNotesText.setVisibility(View.VISIBLE);
-        }
-
-        // Adjust window insets
+        // Apply edge-to-edge window insets
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -97,18 +82,18 @@ public class ProfileActivity extends AppCompatActivity {
         refreshUserNotes();
     }
 
-    // Refresh user notes when returning
     private void refreshUserNotes() {
-        List<Note> userNotesList = dbHandler.getNotesByUser(userEmail);
+        // Fetch notes for this user with DESC order (latest first)
+        List<Note> userNotesList = dbHandler.getNotesByUser(userEmail, "DESC");
 
         if (userNotesList != null && !userNotesList.isEmpty()) {
             if (noteAdapter == null) {
-                noteAdapter = new NoteAdapter(this, userNotesList);
+                noteAdapter = new NoteAdapter(this, userNotesList, userEmail);
+                userNotesRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
                 userNotesRecyclerView.setAdapter(noteAdapter);
             } else {
                 noteAdapter.updateData(userNotesList);
             }
-
             uploadStats.setText("Uploads: " + userNotesList.size());
             emptyUserNotesText.setVisibility(View.GONE);
         } else {

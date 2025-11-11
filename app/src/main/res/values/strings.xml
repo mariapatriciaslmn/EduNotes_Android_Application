@@ -2,4 +2,8 @@
     <string name="app_name">EduNotes Android Application</string>
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="search">Search</string>
+    <string name="profile_picture_default">User profile picture</string>
+    <string name="profile_picture_of">Profile picture of %1$s</string>
+    <string name="User_profile_picture">\n\n</string>
 </resources>

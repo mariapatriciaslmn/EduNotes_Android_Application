@@ -3,10 +3,14 @@ package com.example.edunotesandroidapplication;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.TextView;
+
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.edunotesandroidapplication.adapters.NoteAdapter;
+import com.example.edunotesandroidapplication.models.Note;
 
 import java.util.List;
 
@@ -16,6 +20,7 @@ public class SavedNotesActivity extends AppCompatActivity {
     private TextView textNoSavedNotes;
     private NoteAdapter noteAdapter;
     private DBHandler dbHandler;
+    private String userEmail;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,30 +45,26 @@ public class SavedNotesActivity extends AppCompatActivity {
         dbHandler = new DBHandler(this);
 
         // Get user email from intent
-        String userEmail = getIntent().getStringExtra("email");
+        userEmail = getIntent().getStringExtra("email");
 
-        // ---------------- Fetch saved notes ----------------
-        List<Note> savedNotes = dbHandler.getAllSavedNotes(userEmail);
-
-        // ---------------- Display data ----------------
-        if (savedNotes == null || savedNotes.isEmpty()) {
-            textNoSavedNotes.setVisibility(View.VISIBLE);
-            recyclerView.setVisibility(View.GONE);
-        } else {
-            textNoSavedNotes.setVisibility(View.GONE);
-            recyclerView.setVisibility(View.VISIBLE);
-
-            // Use the adapter in "saved notes mode"
-            noteAdapter = new NoteAdapter(this, savedNotes, true);
-            recyclerView.setAdapter(noteAdapter);
-        }
+        // Load saved notes
+        loadSavedNotes();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        // Refresh saved notes when coming back
-        String userEmail = getIntent().getStringExtra("email");
+        // Refresh saved notes
+        loadSavedNotes();
+    }
+
+    private void loadSavedNotes() {
+        if (userEmail == null) {
+            textNoSavedNotes.setVisibility(View.VISIBLE);
+            recyclerView.setVisibility(View.GONE);
+            return;
+        }
+
         List<Note> savedNotes = dbHandler.getAllSavedNotes(userEmail);
 
         if (savedNotes == null || savedNotes.isEmpty()) {
@@ -72,7 +73,13 @@ public class SavedNotesActivity extends AppCompatActivity {
         } else {
             textNoSavedNotes.setVisibility(View.GONE);
             recyclerView.setVisibility(View.VISIBLE);
-            noteAdapter.updateData(savedNotes);
+
+            if (noteAdapter == null) {
+                noteAdapter = new NoteAdapter(this, savedNotes, userEmail);
+                recyclerView.setAdapter(noteAdapter);
+            } else {
+                noteAdapter.updateData(savedNotes);
+            }
         }
     }
 }

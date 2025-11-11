@@ -14,6 +14,9 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.EduNotesAndroidApplication">
         <activity
+            android:name=".CommentActivity"
+            android:exported="false" />
+        <activity
             android:name=".SavedNotesActivity"
             android:exported="false" />
         <activity

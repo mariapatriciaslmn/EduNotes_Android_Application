@@ -1,16 +1,22 @@
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
     <style name="Base.Theme.EduNotesAndroidApplication" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
 
+    </style>
+
+    <!-- App Theme -->
     <style name="Theme.EduNotesAndroidApplication" parent="Base.Theme.EduNotesAndroidApplication" />
 
+    <!-- Toolbar and general UI text color -->
     <style name="Theme.EduNotes" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <!-- Ensure text color is visible -->
         <item name="android:textColorPrimary">@android:color/white</item>
+        <item name="android:statusBarColor">#FADADD</item>
+        <item name="android:navigationBarColor">#7B1E1E</item>
+        <item name="android:windowLightStatusBar">true</item>
+
     </style>
 
+    <!-- Removes active indicator (useful for BottomNavigationView) -->
     <style name="NoActiveIndicator">
         <item name="android:color">@android:color/transparent</item>
     </style>

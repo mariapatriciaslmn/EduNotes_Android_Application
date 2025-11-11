@@ -1,26 +1,49 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#EFDDDD"
+    android:background="#F5F5F5"
     android:orientation="vertical"
     android:padding="16dp">
 
-    <EditText
-        android:id="@+id/searchInput"
+    <!-- Search Bar Container -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:hint="Search notes..."
-        android:background="@android:drawable/edit_text"
-        android:padding="10dp"/>
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:background="@drawable/rounded_search_bg"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:gravity="center_vertical"
+        android:elevation="4dp">
 
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@drawable/search_logo" />
+
+        <EditText
+            android:id="@+id/searchInput"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:hint="Search notes..."
+            android:background="@android:color/transparent"
+            android:paddingStart="8dp"
+            android:textColor="#000000"
+            android:textColorHint="#888888"
+            android:inputType="text" />
+    </LinearLayout>
+
+    <!-- RecyclerView for search results -->
     <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/searchResultsRecyclerView"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="10dp"
+        android:layout_marginTop="12dp"
         android:layout_weight="1"
-        android:background="#FBFBFB" />
-
+        android:clipToPadding="false"
+        android:scrollbars="vertical" />
 </LinearLayout>

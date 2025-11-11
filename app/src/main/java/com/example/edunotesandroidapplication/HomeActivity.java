@@ -2,9 +2,13 @@ package com.example.edunotesandroidapplication;
 
 import android.content.Intent;
 import android.os.Bundle;
-import android.widget.Toast;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.widget.PopupMenu;
 
 import androidx.activity.EdgeToEdge;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.graphics.Insets;
@@ -13,6 +17,8 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.example.edunotesandroidapplication.adapters.NoteAdapter;
+import com.example.edunotesandroidapplication.models.Note;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 
 import java.util.List;
@@ -22,9 +28,8 @@ public class HomeActivity extends AppCompatActivity {
     private BottomNavigationView bottomNav;
     private RecyclerView recyclerView;
     private NoteAdapter noteAdapter;
-    private List<Note> noteList;
     private DBHandler dbHandler;
-    private String userEmail; // to track logged-in user
+    private String userEmail;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -32,58 +37,44 @@ public class HomeActivity extends AppCompatActivity {
         EdgeToEdge.enable(this);
         setContentView(R.layout.activity_home);
 
-        // ---------------- Toolbar setup ----------------
+        // ---------------- Toolbar ----------------
         Toolbar toolbar = findViewById(R.id.homeToolbar);
         setSupportActionBar(toolbar);
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle("EduNotes");
-        }
+        if (getSupportActionBar() != null) getSupportActionBar().setTitle("EduNotes");
 
-        // ---------------- Initialize DBHandler ----------------
-        dbHandler = new DBHandler(this);
-
-        // ---------------- Initialize views ----------------
+        // ---------------- RecyclerView ----------------
         recyclerView = findViewById(R.id.recyclerViewNotes);
         recyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        recyclerView.setHasFixedSize(true);
 
-        // ---------------- Get user email ----------------
+        // ---------------- DBHandler ----------------
+        dbHandler = new OnlineDBHandler(this);
+
+        // ---------------- User Email ----------------
         userEmail = getIntent().getStringExtra("email");
 
-        // ---------------- Load notes ----------------
-        loadNotes();
+        // ---------------- Load Notes (default newest first) ----------------
+        loadNotes("DESC");
 
         // ---------------- Bottom Navigation ----------------
         bottomNav = findViewById(R.id.bottom_navigation);
         bottomNav.setOnItemSelectedListener(item -> {
             int id = item.getItemId();
-
-            if (id == R.id.nav_home) {
-                return true;
-
-            } else if (id == R.id.nav_upload) {
-                startActivity(new Intent(this, UploadNotesActivity.class));
-                Intent intent = new Intent (this, UploadNotesActivity.class);
-                intent.putExtra("email", userEmail);
-                startActivity(intent);
-                return true;
-
+            Intent intent;
+            if (id == R.id.nav_upload) {
+                intent = new Intent(this, UploadNotesActivity.class);
             } else if (id == R.id.nav_saved) {
-                Intent intent = new Intent(this, SavedNotesActivity.class);
-                intent.putExtra("email", userEmail);
-                startActivity(intent);
-                return true;
-
+                intent = new Intent(this, SavedNotesActivity.class);
             } else if (id == R.id.nav_profile) {
-                Intent intent = new Intent(this, ProfileActivity.class);
-                intent.putExtra("email", userEmail);
-                startActivity(intent);
-                return true;
-            }
+                intent = new Intent(this, ProfileActivity.class);
+            } else return true;
 
-            return false;
+            intent.putExtra("email", userEmail);
+            startActivity(intent);
+            return true;
         });
 
-        // ---------------- Edge-to-Edge Padding ----------------
+        // ---------------- Edge-to-edge padding ----------------
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
@@ -91,26 +82,64 @@ public class HomeActivity extends AppCompatActivity {
         });
     }
 
-    // ---------------- Load Notes from Database ----------------
-    private void loadNotes() {
-        noteList = dbHandler.getAllNotes();
+    // ---------------- Load Notes ----------------
+    private void loadNotes(String sortOrder) {
+        List<Note> noteList = dbHandler.getAllNotes(sortOrder);
 
-        if (noteList == null || noteList.isEmpty()) {
-            findViewById(R.id.emptyText).setVisibility(android.view.View.VISIBLE);
-        } else {
-            findViewById(R.id.emptyText).setVisibility(android.view.View.GONE);
-        }
+        View emptyText = findViewById(R.id.emptyText);
+        emptyText.setVisibility(noteList.isEmpty() ? View.VISIBLE : View.GONE);
 
-        // Get ALL notes from database
-        List<Note> noteList = dbHandler.getAllNotes();
-
-        noteAdapter = new NoteAdapter(this, noteList);
+        noteAdapter = new NoteAdapter(this, noteList, userEmail);
         recyclerView.setAdapter(noteAdapter);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        loadNotes(); // refresh notes every time you return
+        recyclerView.setVisibility(View.VISIBLE);
+        loadNotes("DESC"); // default refresh
+    }
+
+    // ---------------- Toolbar Menu ----------------
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.top_app_bar_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(@NonNull MenuItem item) {
+        int id = item.getItemId();
+
+        if (id == R.id.action_search) {
+            getSupportFragmentManager()
+                    .beginTransaction()
+                    .replace(R.id.fragmentContainer, new SearchFragment())
+                    .addToBackStack(null)
+                    .commit();
+            recyclerView.setVisibility(View.GONE);
+            return true;
+
+        } else if (id == R.id.action_sort) {
+            // ---------------- PopupMenu for sorting ----------------
+            View menuItemView = findViewById(R.id.action_sort);
+            PopupMenu popup = new PopupMenu(this, menuItemView);
+            popup.getMenu().add("Newest → Oldest");
+            popup.getMenu().add("Oldest → Newest");
+
+            popup.setOnMenuItemClickListener(menuItem -> {
+                if (menuItem.getTitle().equals("Newest → Oldest")) {
+                    loadNotes("DESC");
+                } else {
+                    loadNotes("ASC");
+                }
+                return true;
+            });
+
+            popup.show();
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 }

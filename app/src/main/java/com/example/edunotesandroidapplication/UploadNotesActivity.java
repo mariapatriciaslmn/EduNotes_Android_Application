@@ -4,6 +4,8 @@ import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.net.Uri;
@@ -59,7 +61,11 @@ public class UploadNotesActivity extends AppCompatActivity {
         uploadButton = findViewById(R.id.uploadButton);
 
         // Toolbar back button
-        findViewById(R.id.uploadNotesToolbar).setOnClickListener(v -> onBackPressed());
+        Toolbar uploadNotesToolbar = findViewById(R.id.uploadNotesToolbar);
+        setSupportActionBar(uploadNotesToolbar);
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle("Upload Notes");
+        }
 
         // Select image
         selectImageButton.setOnClickListener(v -> openImagePicker());

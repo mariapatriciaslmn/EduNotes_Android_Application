@@ -2,68 +2,144 @@ package com.example.edunotesandroidapplication;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
-import androidx.appcompat.widget.Toolbar;
-import androidx.activity.EdgeToEdge;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
-import androidx.core.view.ViewCompat;
-import androidx.core.view.WindowInsetsCompat;
+import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
+import com.example.edunotesandroidapplication.adapters.CommentAdapter;
+import com.example.edunotesandroidapplication.models.Comment;
+import com.example.edunotesandroidapplication.models.Note;
+
+import java.util.List;
 
 public class NoteDetailsActivity extends AppCompatActivity {
+
+    private TextView titleTextView, descriptionTextView, uploaderTextView, dateTextView;
+    private ImageView noteImageView, saveButton, commentButton;
+    private RecyclerView commentsRecyclerView;
+    private EditText commentEditText;
+    private Button postCommentButton;
+    private DBHandler dbHandler;
+    private CommentAdapter commentAdapter;
+    private int noteId;
+    private String userEmail;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        EdgeToEdge.enable(this);
         setContentView(R.layout.activity_note_details);
 
-        // --- Initialize UI elements ---
-        TextView title = findViewById(R.id.noteTitle);
-        TextView description = findViewById(R.id.noteDescription);
-        TextView uploader = findViewById(R.id.uploaderName);
-        ImageView image = findViewById(R.id.noteImage);
-        Toolbar noteDetailsToolbar = findViewById(R.id.noteDetailsToolbar);
+        dbHandler = new DBHandler(this);
 
-        // --- Setup Toolbar ---
-        setSupportActionBar(noteDetailsToolbar);
+        // --- Initialize UI ---
+        titleTextView = findViewById(R.id.noteTitle);
+        descriptionTextView = findViewById(R.id.noteDescription);
+        uploaderTextView = findViewById(R.id.uploaderName);
+        dateTextView = findViewById(R.id.noteDate);
+        noteImageView = findViewById(R.id.noteImage);
+        saveButton = findViewById(R.id.saveButton);
+        commentButton = findViewById(R.id.commentButton);
+        commentsRecyclerView = findViewById(R.id.commentsRecyclerView);
+        commentEditText = findViewById(R.id.commentEditText);
+        postCommentButton = findViewById(R.id.postCommentButton);
+        Toolbar toolbar = findViewById(R.id.noteDetailsToolbar);
+
+        // --- Toolbar setup ---
+        setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle("Note Details");
         }
+        toolbar.setNavigationIcon(R.drawable.baseline_arrow_back_24);
+        toolbar.setNavigationOnClickListener(v -> finish());
 
-        // Add back arrow and listener
-        noteDetailsToolbar.setNavigationIcon(R.drawable.baseline_arrow_back_24);
-        noteDetailsToolbar.setNavigationOnClickListener(v -> {
-            Intent backIntent = new Intent(NoteDetailsActivity.this, HomeActivity.class);
-            backIntent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
-            startActivity(backIntent);
-            finish();
-        });
-
-        // --- Receive data from Intent ---
+        // --- Receive Intent data ---
         Intent intent = getIntent();
         if (intent != null) {
-            String noteTitle = intent.getStringExtra("title");
-            String noteDescription = intent.getStringExtra("description");
-            String noteUploader = intent.getStringExtra("uploaderName");
-            String imageUrl = intent.getStringExtra("imageUrl");
+            noteId = intent.getIntExtra("noteId", -1);
+            userEmail = intent.getStringExtra("userEmail");
 
-            // --- Display data ---
-            title.setText(noteTitle != null ? noteTitle : "Untitled Note");
-            description.setText(noteDescription != null ? noteDescription : "No description available.");
-            uploader.setText(noteUploader != null ? noteUploader : "Unknown uploader");
+            Note note = dbHandler.getNoteById(noteId);
+            if (note != null) {
+                titleTextView.setText(note.getTitle());
+                descriptionTextView.setText(note.getDescription());
+                uploaderTextView.setText(dbHandler.getUserNameByEmail(note.getUploaderEmail()));
+                dateTextView.setText(formatDate(note.getDateCreated()));
 
-            // (Optional) If you want to display the image later, use Glide or Picasso here
-            // Glide.with(this).load(imageUrl).into(image);
+                if (note.getImageUrl() != null && !note.getImageUrl().isEmpty()) {
+                    // Load image with Glide/Picasso if URL, else placeholder
+                    noteImageView.setImageResource(R.drawable.ic_note_placeholder);
+                } else {
+                    noteImageView.setImageResource(R.drawable.ic_note_placeholder);
+                }
+            }
         }
 
-        // --- Edge-to-edge padding ---
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
-            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
-            return insets;
+        // --- Comments RecyclerView setup ---
+        commentsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        loadComments();
+
+        // --- Post Comment ---
+        postCommentButton.setOnClickListener(v -> {
+            String commentText = commentEditText.getText().toString().trim();
+            if (!commentText.isEmpty()) {
+                dbHandler.addComment(noteId, dbHandler.getUserNameByEmail(userEmail), commentText);
+                commentEditText.setText("");
+                loadComments();
+                Toast.makeText(this, "Comment added", Toast.LENGTH_SHORT).show();
+            }
         });
+
+        // --- Save/Unsave Note ---
+        updateSaveButton();
+        saveButton.setOnClickListener(v -> toggleSaveNote());
+        commentButton.setOnClickListener(v -> commentsRecyclerView.smoothScrollToPosition(commentAdapter.getItemCount() - 1));
+    }
+
+    private void loadComments() {
+        List<Comment> commentList = dbHandler.getCommentsForNote(noteId);
+        if (commentAdapter == null) {
+            commentAdapter = new CommentAdapter(this, commentList);
+            commentsRecyclerView.setAdapter(commentAdapter);
+        } else {
+            commentAdapter.updateComments(commentList);
+        }
+
+        findViewById(R.id.emptyCommentsText).setVisibility(commentList.isEmpty() ? android.view.View.VISIBLE : android.view.View.GONE);
+    }
+
+    private void updateSaveButton() {
+        boolean isSaved = dbHandler.isNoteSaved(noteId, userEmail);
+        saveButton.setImageResource(isSaved ? R.drawable.saved_logo : R.drawable.unsaved_logo);
+    }
+
+    private void toggleSaveNote() {
+        boolean currentlySaved = dbHandler.isNoteSaved(noteId, userEmail);
+        if (currentlySaved) {
+            dbHandler.removeSavedNoteForUser(noteId, userEmail);
+            Toast.makeText(this, "Removed from saved notes", Toast.LENGTH_SHORT).show();
+        } else {
+            dbHandler.saveNoteForUser(noteId, userEmail);
+            Toast.makeText(this, "Saved successfully", Toast.LENGTH_SHORT).show();
+        }
+        updateSaveButton();
+    }
+
+    private String formatDate(String rawDate) {
+        // Optional: format "yyyy-MM-dd HH:mm:ss" to "Nov 10, 2025"
+        try {
+            java.text.SimpleDateFormat inputFormat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
+            java.util.Date date = inputFormat.parse(rawDate);
+            java.text.SimpleDateFormat outputFormat = new java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault());
+            return outputFormat.format(date);
+        } catch (Exception e) {
+            return rawDate;
+        }
     }
 }
