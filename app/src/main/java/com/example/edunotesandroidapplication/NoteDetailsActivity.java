@@ -1,7 +1,10 @@
 package com.example.edunotesandroidapplication;
 
-import android.content.Intent;
+import android.content.Context;
+import android.net.Uri;
 import android.os.Bundle;
+import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
@@ -10,136 +13,237 @@ import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.edunotesandroidapplication.adapters.CommentAdapter;
+import com.example.edunotesandroidapplication.adapters.FilesAdapter;
 import com.example.edunotesandroidapplication.models.Comment;
+import com.example.edunotesandroidapplication.models.Files;
 import com.example.edunotesandroidapplication.models.Note;
 
+import org.json.JSONArray;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class NoteDetailsActivity extends AppCompatActivity {
 
-    private TextView titleTextView, descriptionTextView, uploaderTextView, dateTextView;
-    private ImageView noteImageView, saveButton, commentButton;
-    private RecyclerView commentsRecyclerView;
+    private TextView noteTitle, noteDescription, uploaderName, noteDate;
+    private ImageView uploaderProfileImage, saveButton, commentButton;
+    private RecyclerView filesRecyclerView, commentsRecyclerView;
     private EditText commentEditText;
     private Button postCommentButton;
-    private DBHandler dbHandler;
-    private CommentAdapter commentAdapter;
+    private TextView emptyCommentsText;
+
+    private OnlineDBHandler dbHandler;
     private int noteId;
     private String userEmail;
+    private boolean isSaved = false;
+
+    private CommentAdapter commentAdapter;
+    private List<Comment> commentList = new ArrayList<>();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_note_details);
 
-        dbHandler = new DBHandler(this);
-
-        // --- Initialize UI ---
-        titleTextView = findViewById(R.id.noteTitle);
-        descriptionTextView = findViewById(R.id.noteDescription);
-        uploaderTextView = findViewById(R.id.uploaderName);
-        dateTextView = findViewById(R.id.noteDate);
-        noteImageView = findViewById(R.id.noteImage);
-        saveButton = findViewById(R.id.saveButton);
-        commentButton = findViewById(R.id.commentButton);
-        commentsRecyclerView = findViewById(R.id.commentsRecyclerView);
-        commentEditText = findViewById(R.id.commentEditText);
-        postCommentButton = findViewById(R.id.postCommentButton);
+        // Toolbar
         Toolbar toolbar = findViewById(R.id.noteDetailsToolbar);
-
-        // --- Toolbar setup ---
         setSupportActionBar(toolbar);
         if (getSupportActionBar() != null) {
             getSupportActionBar().setTitle("Note Details");
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
-        toolbar.setNavigationIcon(R.drawable.baseline_arrow_back_24);
         toolbar.setNavigationOnClickListener(v -> finish());
 
-        // --- Receive Intent data ---
-        Intent intent = getIntent();
-        if (intent != null) {
-            noteId = intent.getIntExtra("noteId", -1);
-            userEmail = intent.getStringExtra("userEmail");
+        // Views
+        noteTitle = findViewById(R.id.noteTitle);
+        noteDescription = findViewById(R.id.noteDescription);
+        uploaderName = findViewById(R.id.uploaderName);
+        uploaderProfileImage = findViewById(R.id.uploaderProfileImage);
+        noteDate = findViewById(R.id.noteDate);
 
-            Note note = dbHandler.getNoteById(noteId);
-            if (note != null) {
-                titleTextView.setText(note.getTitle());
-                descriptionTextView.setText(note.getDescription());
-                uploaderTextView.setText(dbHandler.getUserNameByEmail(note.getUploaderEmail()));
-                dateTextView.setText(formatDate(note.getDateCreated()));
+        filesRecyclerView = findViewById(R.id.mixedRecyclerView);
+        filesRecyclerView.setLayoutManager(new GridLayoutManager(this, 3));
 
-                if (note.getImageUrl() != null && !note.getImageUrl().isEmpty()) {
-                    // Load image with Glide/Picasso if URL, else placeholder
-                    noteImageView.setImageResource(R.drawable.ic_note_placeholder);
-                } else {
-                    noteImageView.setImageResource(R.drawable.ic_note_placeholder);
-                }
-            }
+        saveButton = findViewById(R.id.saveButton);
+        commentButton = findViewById(R.id.commentButton);
+
+        commentsRecyclerView = findViewById(R.id.commentsRecyclerView);
+        commentsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        commentAdapter = new CommentAdapter(this, commentList);
+        commentsRecyclerView.setAdapter(commentAdapter);
+
+        commentEditText = findViewById(R.id.commentEditText);
+        postCommentButton = findViewById(R.id.postCommentButton);
+        emptyCommentsText = findViewById(R.id.emptyCommentsText);
+
+        dbHandler = new OnlineDBHandler(this);
+
+        // Get noteId and userEmail from intent
+        noteId = getIntent().getIntExtra("note_id", -1);
+        userEmail = getIntent().getStringExtra("user_email"); // <-- key matches NoteAdapter
+
+        if (noteId == -1 || userEmail == null || userEmail.isEmpty()) {
+            Toast.makeText(this, "Invalid Note or User", Toast.LENGTH_SHORT).show();
+            finish();
+            return;
         }
 
-        // --- Comments RecyclerView setup ---
-        commentsRecyclerView.setLayoutManager(new LinearLayoutManager(this));
+        loadNoteDetails();
         loadComments();
 
-        // --- Post Comment ---
-        postCommentButton.setOnClickListener(v -> {
-            String commentText = commentEditText.getText().toString().trim();
-            if (!commentText.isEmpty()) {
-                dbHandler.addComment(noteId, dbHandler.getUserNameByEmail(userEmail), commentText);
-                commentEditText.setText("");
-                loadComments();
-                Toast.makeText(this, "Comment added", Toast.LENGTH_SHORT).show();
-            }
+        saveButton.setOnClickListener(v -> toggleSaveState());
+
+        commentButton.setOnClickListener(v -> {
+            commentEditText.requestFocus();
+            InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
+            if (imm != null) imm.showSoftInput(commentEditText, InputMethodManager.SHOW_IMPLICIT);
         });
 
-        // --- Save/Unsave Note ---
-        updateSaveButton();
-        saveButton.setOnClickListener(v -> toggleSaveNote());
-        commentButton.setOnClickListener(v -> commentsRecyclerView.smoothScrollToPosition(commentAdapter.getItemCount() - 1));
+        postCommentButton.setOnClickListener(v -> postComment());
     }
 
-    private void loadComments() {
-        List<Comment> commentList = dbHandler.getCommentsForNote(noteId);
-        if (commentAdapter == null) {
-            commentAdapter = new CommentAdapter(this, commentList);
-            commentsRecyclerView.setAdapter(commentAdapter);
-        } else {
-            commentAdapter.updateComments(commentList);
+    // ==================== LOAD NOTE DETAILS ============================
+    private void loadNoteDetails() {
+        dbHandler.getNoteById(noteId, response -> {
+            try {
+                JSONObject obj = new JSONObject(response);
+
+                if (!obj.optBoolean("success", true)) {
+                    runOnUiThread(() -> Toast.makeText(this, "Failed to load note", Toast.LENGTH_SHORT).show());
+                    return;
+                }
+
+                Note note = new Note(
+                        obj.getInt("note_id"),
+                        obj.getString("title"),
+                        obj.getString("description"),
+                        "",
+                        obj.getString("uploader_email"),
+                        obj.getString("date_created")
+                );
+
+                note.setUploaderName(obj.optString("uploader_name", note.getUploaderEmail()));
+                note.setUploaderProfileUri(obj.optString("uploader_profile_uri", ""));
+
+                List<String> filesList = new ArrayList<>();
+                JSONArray arr = new JSONArray(obj.optString("files_json", "[]"));
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject fObj = arr.getJSONObject(i);
+                    String fullPath = OnlineDBHandler.getBaseUrl() + fObj.getString("path");
+                    filesList.add(fullPath);
+                }
+                note.setFiles(filesList);
+
+                checkSavedState(note);
+                runOnUiThread(() -> displayNoteDetails(note));
+
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private void checkSavedState(Note note) {
+        dbHandler.isNoteSaved(note.getId(), userEmail, response -> {
+            isSaved = Boolean.parseBoolean(response);
+            runOnUiThread(this::updateSaveIcon);
+        });
+    }
+
+    private void displayNoteDetails(Note note) {
+        noteTitle.setText(note.getTitle());
+        noteDescription.setText(note.getDescription());
+        noteDate.setText(note.getDateCreated());
+
+        uploaderName.setText(note.getUploaderName());
+        Glide.with(this)
+                .load(note.getUploaderProfileUri())
+                .placeholder(R.drawable.profile_logo)
+                .circleCrop()
+                .into(uploaderProfileImage);
+
+        // FILES
+        List<Files> filesObjects = new ArrayList<>();
+        if (note.getFiles() != null) {
+            for (String url : note.getFiles()) {
+                String fileName = url.substring(url.lastIndexOf("/") + 1);
+                String ext = fileName.contains(".") ? fileName.substring(fileName.lastIndexOf(".") + 1) : "";
+                filesObjects.add(new Files(Uri.parse(url), fileName, ext));
+            }
         }
 
-        findViewById(R.id.emptyCommentsText).setVisibility(commentList.isEmpty() ? android.view.View.VISIBLE : android.view.View.GONE);
+        if (!filesObjects.isEmpty()) {
+            FilesAdapter filesAdapter = new FilesAdapter(this, filesObjects);
+            filesRecyclerView.setAdapter(filesAdapter);
+            filesRecyclerView.setVisibility(View.VISIBLE);
+        } else {
+            filesRecyclerView.setVisibility(View.GONE);
+        }
     }
 
-    private void updateSaveButton() {
-        boolean isSaved = dbHandler.isNoteSaved(noteId, userEmail);
+    // ===================== SAVE NOTE ========================
+    private void toggleSaveState() {
+        if (isSaved) {
+            dbHandler.removeSavedNote(noteId, userEmail, r -> {
+                isSaved = false;
+                runOnUiThread(() -> {
+                    updateSaveIcon();
+                    Toast.makeText(this, "Removed from saved notes", Toast.LENGTH_SHORT).show();
+                });
+            });
+        } else {
+            dbHandler.saveNote(noteId, userEmail, response -> {
+                isSaved = true;
+                runOnUiThread(() -> {
+                    updateSaveIcon();
+                    Toast.makeText(this, "Note saved!", Toast.LENGTH_SHORT).show();
+                });
+            });
+        }
+    }
+
+    private void updateSaveIcon() {
         saveButton.setImageResource(isSaved ? R.drawable.saved_logo : R.drawable.unsaved_logo);
     }
 
-    private void toggleSaveNote() {
-        boolean currentlySaved = dbHandler.isNoteSaved(noteId, userEmail);
-        if (currentlySaved) {
-            dbHandler.removeSavedNoteForUser(noteId, userEmail);
-            Toast.makeText(this, "Removed from saved notes", Toast.LENGTH_SHORT).show();
-        } else {
-            dbHandler.saveNoteForUser(noteId, userEmail);
-            Toast.makeText(this, "Saved successfully", Toast.LENGTH_SHORT).show();
-        }
-        updateSaveButton();
+    // ======================== COMMENTS ========================
+    private void loadComments() {
+        dbHandler.getCommentsByNoteId(noteId, response -> {
+            try {
+                JSONArray arr = new JSONArray(response);
+                commentList.clear();
+                for (int i = 0; i < arr.length(); i++) {
+                    Comment c = Comment.fromJson(arr.getJSONObject(i));
+                    commentList.add(c);
+                }
+                runOnUiThread(() -> {
+                    commentAdapter.updateComments(commentList);
+                    emptyCommentsText.setVisibility(commentList.isEmpty() ? View.VISIBLE : View.GONE);
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
-    private String formatDate(String rawDate) {
-        // Optional: format "yyyy-MM-dd HH:mm:ss" to "Nov 10, 2025"
-        try {
-            java.text.SimpleDateFormat inputFormat = new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss", java.util.Locale.getDefault());
-            java.util.Date date = inputFormat.parse(rawDate);
-            java.text.SimpleDateFormat outputFormat = new java.text.SimpleDateFormat("MMM dd, yyyy", java.util.Locale.getDefault());
-            return outputFormat.format(date);
-        } catch (Exception e) {
-            return rawDate;
+    private void postComment() {
+        String content = commentEditText.getText().toString().trim();
+        if (content.isEmpty()) {
+            Toast.makeText(this, "Comment cannot be empty", Toast.LENGTH_SHORT).show();
+            return;
         }
+
+        dbHandler.addComment(noteId, userEmail, content, response -> runOnUiThread(() -> {
+            commentEditText.setText("");
+            loadComments();
+            Toast.makeText(this, "Comment posted", Toast.LENGTH_SHORT).show();
+        }));
     }
 }

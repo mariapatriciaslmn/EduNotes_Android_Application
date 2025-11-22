@@ -3,11 +3,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_margin="10dp"
     android:foreground="?attr/selectableItemBackground"
-    app:cardCornerRadius="16dp"
+    android:backgroundTint="@android:color/white"
     app:cardElevation="8dp"
-    android:backgroundTint="@android:color/white">
+    app:cardCornerRadius="16dp">
 
     <LinearLayout
         android:layout_width="match_parent"
@@ -22,7 +23,7 @@
             android:layout_height="wrap_content"
             android:text="Sample Note Title"
             android:textColor="#000000"
-            android:textSize="25sp"
+            android:textSize="22sp"
             android:textStyle="bold"
             android:maxLines="2"
             android:ellipsize="end"
@@ -34,19 +35,19 @@
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center_vertical"
-            android:layout_marginBottom="8dp">
+            android:layout_marginBottom="10dp">
 
             <!-- Profile image -->
             <ImageView
                 android:id="@+id/uploaderProfileImage"
-                android:layout_width="36dp"
-                android:layout_height="36dp"
+                android:layout_width="38dp"
+                android:layout_height="38dp"
                 android:src="@drawable/profile_logo"
                 android:scaleType="centerCrop"
                 android:background="@drawable/circle_background"
-                android:layout_marginEnd="8dp" />
+                android:layout_marginEnd="10dp" />
 
-            <!-- Vertical layout for uploader name + date -->
+            <!-- Name + Date -->
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
@@ -58,7 +59,7 @@
                     android:layout_height="wrap_content"
                     android:text="Uploader Name"
                     android:textColor="#000000"
-                    android:textSize="16sp"
+                    android:textSize="15sp"
                     android:textStyle="bold" />
 
                 <TextView
@@ -66,14 +67,11 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:text="November 5, 2025"
-                    android:textColor="#777"
+                    android:textColor="#777777"
                     android:textSize="12sp"
                     android:layout_marginTop="2dp" />
-
             </LinearLayout>
-
         </LinearLayout>
-
 
         <!-- Description -->
         <TextView
@@ -85,28 +83,25 @@
             android:textSize="14sp"
             android:maxLines="3"
             android:ellipsize="end"
-            android:layout_marginBottom="10dp" />
+            android:layout_marginBottom="12dp" />
 
-        <!-- Note image -->
-        <ImageView
-            android:id="@+id/noteImage"
+        <!-- PREVIEW 3-COLUMN ATTACHMENTS (images + files) -->
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/previewAttachmentsRecyclerView"
             android:layout_width="match_parent"
-            android:layout_height="220dp"
-            android:scaleType="centerCrop"
-            android:adjustViewBounds="true"
-            android:background="#E0E0E0"
-            android:src="@drawable/sample_note"
-            android:layout_marginBottom="8dp" />
+            android:layout_height="266dp"
+            android:layout_marginBottom="10dp"
+            android:nestedScrollingEnabled="false"
+            tools:listitem="@layout/item_file" />
 
-        <!-- Bottom action bar (Save + Comment buttons) -->
+        <!-- Buttons -->
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="horizontal"
             android:gravity="center"
             android:weightSum="2"
-            android:paddingTop="4dp"
-            android:paddingBottom="4dp">
+            android:paddingVertical="6dp">
 
             <!-- Save button -->
             <LinearLayout
@@ -122,19 +117,10 @@
                 <ImageView
                     android:id="@+id/saveButton"
                     android:layout_width="24dp"
-                    android:layout_height="24dp"
+                    android:layout_height="match_parent"
+                    android:contentDescription="Save note"
                     android:src="@drawable/unsaved_logo"
-                    app:tint="#7B1E1E"
-                    android:contentDescription="Save note" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Save"
-                    android:textColor="#7B1E1E"
-                    android:textStyle="bold"
-                    android:textSize="14sp"
-                    android:layout_marginStart="6dp" />
+                    app:tint="#7B1E1E" />
             </LinearLayout>
 
             <!-- Comment button -->
@@ -156,14 +142,6 @@
                     app:tint="#7B1E1E"
                     android:contentDescription="Comment" />
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Comment"
-                    android:textColor="#7B1E1E"
-                    android:textStyle="bold"
-                    android:textSize="14sp"
-                    android:layout_marginStart="6dp" />
             </LinearLayout>
 
         </LinearLayout>

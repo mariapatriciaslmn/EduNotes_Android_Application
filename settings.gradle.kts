@@ -13,21 +13,12 @@ pluginManagement {
 }
 
 dependencyResolutionManagement {
-    versionCatalogs {
-        create("libs") {
-            from(files("gradle/libs.versions.toml"))
-        }
-    }
-}
-
-dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
         google()
         mavenCentral()
-    }
+        maven { url = uri("https://jitpack.io") }    }
 }
 
 rootProject.name = "EduNotes Android Application"
 include(":app")
- 

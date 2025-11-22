@@ -1,11 +1,16 @@
 package com.example.edunotesandroidapplication;
 
-import android.content.Intent;
+import android.app.Activity;
+import android.content.Context;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
@@ -13,9 +18,15 @@ import androidx.core.view.WindowInsetsCompat;
 import androidx.recyclerview.widget.GridLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.bumptech.glide.Glide;
 import com.example.edunotesandroidapplication.adapters.NoteAdapter;
 import com.example.edunotesandroidapplication.models.Note;
 
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.util.ArrayList;
 import java.util.List;
 
 public class ProfileActivity extends AppCompatActivity {
@@ -25,80 +36,214 @@ public class ProfileActivity extends AppCompatActivity {
     private RecyclerView userNotesRecyclerView;
 
     private NoteAdapter noteAdapter;
-    private DBHandler dbHandler;
+    private OnlineDBHandler dbHandler;
     private String userEmail;
+
+    private ActivityResultLauncher<String> pickImageLauncher;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_profile);
 
-        // Toolbar elements
+        // Toolbar buttons
         ImageView backButton = findViewById(R.id.backButton);
         ImageView logoutButton = findViewById(R.id.logoutButton);
-        TextView toolbarTitle = findViewById(R.id.toolbarTitle);
-
-        // Back button click
         backButton.setOnClickListener(v -> finish());
-
-        // Logout button click
         logoutButton.setOnClickListener(v -> {
-            Intent intent = new Intent(ProfileActivity.this, SignUpActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
-            startActivity(intent);
+            new androidx.appcompat.app.AlertDialog.Builder(ProfileActivity.this)
+                    .setTitle("Logout")
+                    .setMessage("Are you sure you want to log out?")
+                    .setPositiveButton("Yes", (dialog, which) -> {
+                        startActivity(new android.content.Intent(ProfileActivity.this, LoginActivity.class)
+                                .setFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK | android.content.Intent.FLAG_ACTIVITY_CLEAR_TASK));
+                        finish();
+                    })
+                    .setNegativeButton("No", (dialog, which) -> dialog.dismiss())
+                    .setCancelable(true)
+                    .show();
         });
 
-        // Initialize views
+        // Views
         profilePicture = findViewById(R.id.profilePicture);
         usernameText = findViewById(R.id.usernameText);
         uploadStats = findViewById(R.id.uploadStats);
         emptyUserNotesText = findViewById(R.id.emptyUserNotesText);
         userNotesRecyclerView = findViewById(R.id.userNotesRecyclerView);
 
-        // Initialize DBHandler
-        dbHandler = new DBHandler(this);
-
-        // Get user email from intent
+        // DB Handler & user email
+        dbHandler = new OnlineDBHandler(this);
         userEmail = getIntent().getStringExtra("email");
 
-        // Get user name from DB
-        String userName = dbHandler.getUserNameByEmail(userEmail);
-        usernameText.setText(userName != null ? userName : "User");
+        // Initialize RecyclerView & adapter
+        noteAdapter = new NoteAdapter(this, new ArrayList<>(), userEmail);
+        userNotesRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
+        userNotesRecyclerView.setAdapter(noteAdapter);
 
-        // Load user's uploaded notes
-        refreshUserNotes();
-
-        // Apply edge-to-edge window insets
+        // Edge-to-edge support
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main), (v, insets) -> {
             Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
             return insets;
         });
-    }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
+        // Launcher for picking profile image
+        pickImageLauncher = registerForActivityResult(
+                new ActivityResultContracts.GetContent(),
+                uri -> {
+                    if (uri != null) updateProfilePicture(uri);
+                    else Toast.makeText(this, "No image selected", Toast.LENGTH_SHORT).show();
+                }
+        );
+        profilePicture.setOnClickListener(v -> pickImageLauncher.launch("image/*"));
+
+        // Observe new notes via NoteEventBus
+        NoteEventBus.getInstance().getNewNoteLiveData().observe(this, noteId -> {
+            if (noteId != null) loadNewNote(noteId);
+        });
+
+        // Load profile and notes initially
+        loadUserProfile();
         refreshUserNotes();
     }
 
-    private void refreshUserNotes() {
-        // Fetch notes for this user with DESC order (latest first)
-        List<Note> userNotesList = dbHandler.getNotesByUser(userEmail, "DESC");
-
-        if (userNotesList != null && !userNotesList.isEmpty()) {
-            if (noteAdapter == null) {
-                noteAdapter = new NoteAdapter(this, userNotesList, userEmail);
-                userNotesRecyclerView.setLayoutManager(new GridLayoutManager(this, 2));
-                userNotesRecyclerView.setAdapter(noteAdapter);
-            } else {
-                noteAdapter.updateData(userNotesList);
-            }
-            uploadStats.setText("Uploads: " + userNotesList.size());
-            emptyUserNotesText.setVisibility(View.GONE);
+    private void loadProfileImage(String uri, ImageView imageView) {
+        if (uri == null || uri.isEmpty()) {
+            imageView.setImageResource(R.drawable.ic_profile_placeholder);
         } else {
-            uploadStats.setText("Uploads: 0");
-            emptyUserNotesText.setVisibility(View.VISIBLE);
+            // Use ImageView's context to avoid crashing if activity is destroyed
+            Context context = imageView.getContext();
+            if (context instanceof Activity) {
+                Activity activity = (Activity) context;
+                if (activity.isDestroyed() || activity.isFinishing()) {
+                    // Don't attempt to load the image if activity is destroyed
+                    return;
+                }
+            }
+
+            Glide.with(context)
+                    .load(uri)
+                    .placeholder(R.drawable.ic_profile_placeholder)
+                    .error(R.drawable.ic_profile_placeholder)
+                    .into(imageView);
+        }
+    }
+    private void loadUserProfile() {
+        if (userEmail == null) return;
+        dbHandler.getUser(userEmail, response -> {
+            try {
+                JSONObject obj = new JSONObject(response);
+                String name = obj.optString("name", "User");
+                String uri = obj.optString("profile_picture_uri", "");
+
+                usernameText.setText(name);
+                loadProfileImage(uri, profilePicture);
+
+            } catch (JSONException e) {
+                e.printStackTrace();
+                usernameText.setText("User");
+                profilePicture.setImageResource(R.drawable.ic_profile_placeholder);
+            }
+        });
+    }
+
+    private void updateProfilePicture(Uri uri) {
+        String imageUri = (uri != null) ? uri.toString() : "";
+        loadProfileImage(imageUri, profilePicture);
+
+        dbHandler.updateProfilePicture(userEmail, imageUri, response -> {
+            try {
+                JSONObject obj = new JSONObject(response);
+                boolean success = obj.optBoolean("success", false);
+                Toast.makeText(ProfileActivity.this,
+                        success ? "Profile picture updated!" : "Failed to update profile picture.",
+                        Toast.LENGTH_SHORT).show();
+            } catch (JSONException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    private void refreshUserNotes() {
+        if (userEmail == null) return;
+
+        dbHandler.fetchNotesByUser(userEmail, "DESC", response -> {
+            List<Note> userNotesList = new ArrayList<>();
+            try {
+                JSONArray arr = new JSONArray(response);
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject obj = arr.getJSONObject(i);
+
+                    Note note = new Note(
+                            obj.getInt("id"),
+                            obj.getString("title"),
+                            obj.getString("description"),
+                            "",
+                            obj.getString("uploader_email"),
+                            obj.getString("date_created")
+                    );
+
+                    List<String> filesList = new ArrayList<>();
+                    JSONArray filesArray = new JSONArray(obj.optString("files_json", "[]"));
+                    for (int j = 0; j < filesArray.length(); j++) filesList.add(filesArray.getString(j));
+                    note.setFiles(filesList);
+
+                    if (!filesList.isEmpty()) note.setFirstImage(filesList.get(0));
+
+                    note.setUploaderName(obj.optString("uploader_name", obj.optString("uploader_email")));
+                    note.setUploaderProfileUri(obj.optString("uploader_profile_uri", ""));
+
+
+                    userNotesList.add(note);
+                }
+            } catch (JSONException e) {
+                e.printStackTrace();
+                runOnUiThread(() -> Toast.makeText(this, "Failed to load notes", Toast.LENGTH_SHORT).show());
+            }
+
+            runOnUiThread(() -> {
+                noteAdapter.updateData(userNotesList);
+                uploadStats.setText("Uploads: " + userNotesList.size());
+                emptyUserNotesText.setVisibility(userNotesList.isEmpty() ? View.VISIBLE : View.GONE);
+            });
+        });
+    }
+
+    private void loadNewNote(int noteId) {
+        dbHandler.getNoteById(noteId, response -> {
+            Note newNote = parseSingleNote(response);
+            if (newNote != null && newNote.getUploaderEmail().equals(userEmail)) {
+                runOnUiThread(() -> noteAdapter.prependNote(newNote));
+            }
+        });
+    }
+
+    private Note parseSingleNote(String response) {
+        try {
+            JSONObject obj = new JSONObject(response);
+            Note note = new Note(
+                    obj.getInt("id"),
+                    obj.getString("title"),
+                    obj.getString("description"),
+                    "",
+                    obj.getString("uploader_email"),
+                    obj.getString("date_created")
+            );
+
+            List<String> filesList = new ArrayList<>();
+            JSONArray filesArray = new JSONArray(obj.optString("files_json", "[]"));
+            for (int j = 0; j < filesArray.length(); j++) filesList.add(filesArray.getString(j));
+            note.setFiles(filesList);
+
+            if (!filesList.isEmpty()) note.setFirstImage(filesList.get(0));
+
+            note.setUploaderName(obj.optString("uploader_name", obj.optString("uploader_email")));
+            note.setUploaderProfileUri(obj.optString("uploader_profile_uri", ""));
+
+            return note;
+        } catch (JSONException e) {
+            e.printStackTrace();
+            return null;
         }
     }
 }

@@ -25,8 +25,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/enPassword"
-        app:layout_constraintVertical_bias="0.95" />
+        app:layout_constraintTop_toBottomOf="@+id/LoginBtn" />
 
     <Button
         android:id="@+id/LoginBtn"
@@ -73,8 +72,8 @@
         android:layout_marginEnd="55dp"
         android:background="@android:drawable/editbox_background"
         android:ems="10"
-        android:inputType="text"
         android:hint="Email"
+        android:inputType="text"
         app:layout_constraintBottom_toTopOf="@+id/enPassword"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
@@ -90,8 +89,8 @@
         android:layout_marginBottom="304dp"
         android:background="@android:drawable/editbox_background"
         android:ems="10"
-        android:inputType="text"
         android:hint="Password"
+        android:inputType="text"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.0"

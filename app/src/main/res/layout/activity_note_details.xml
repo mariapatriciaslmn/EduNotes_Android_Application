@@ -104,15 +104,24 @@
                 android:textColor="#333333"
                 android:layout_marginBottom="16dp"/>
 
-            <!-- Note Image -->
-            <ImageView
-                android:id="@+id/noteImage"
+            <!-- Mixed RecyclerView for images + files -->
+            <TextView
+                android:id="@+id/filesImagesTitle"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Attachments"
+                android:textSize="18sp"
+                android:textStyle="bold"
+                android:textColor="#7B1E1E"
+                android:layout_marginBottom="8dp" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/mixedRecyclerView"
                 android:layout_width="match_parent"
-                android:layout_height="220dp"
-                android:scaleType="centerCrop"
-                android:src="@drawable/sample_note"
-                android:background="#CCCCCC"
-                android:layout_marginBottom="12dp"/>
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                tools:listitem="@layout/item_file"/>
+
 
             <!-- Save + Comment Buttons Row -->
             <LinearLayout
