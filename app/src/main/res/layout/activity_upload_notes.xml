@@ -1,34 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/main"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#EFDDDD"
-    tools:context=".UploadNotesActivity">
+    xmlns:tools="http://schemas.android.com/tools"
+    android:background="#EFDDDD">
 
     <androidx.appcompat.widget.Toolbar
         android:id="@+id/uploadNotesToolbar"
-        android:layout_width="412dp"
-        android:layout_height="63dp"
-        android:layout_marginBottom="731dp"
+        android:layout_width="0dp"
+        android:layout_height="?attr/actionBarSize"
         android:background="#7B1E1E"
-        android:minHeight="?attr/actionBarSize"
-        android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.49"
-        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0"
-        app:navigationIcon="@drawable/baseline_arrow_back_24"
-        app:navigationIconTint="@color/white"
-        app:subtitleTextAppearance="@style/TextAppearance.AppCompat.Medium"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
         app:title="Upload Notes"
-        app:titleTextColor="@android:color/white" />
+        app:titleTextColor="@android:color/white"
+        app:navigationIcon="@drawable/baseline_arrow_back_24"
+        app:navigationIconTint="@android:color/white" />
 
-    <!-- Scrollable content -->
     <ScrollView
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -44,43 +34,38 @@
             android:orientation="vertical"
             android:gravity="center_horizontal">
 
-            <!-- Image Preview -->
-            <ImageView
-                android:id="@+id/imagePreview"
-                android:layout_width="250dp"
-                android:layout_height="250dp"
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/filesRecyclerView"
+                android:layout_width="match_parent"
+                android:layout_height="200dp"
                 android:layout_marginTop="16dp"
-                android:background="#DDDDDD"
-                android:contentDescription="Note Image Preview"
-                android:scaleType="centerCrop"
-                android:src="@drawable/sample_note"
-                android:elevation="4dp"
-                android:padding="8dp"
-                android:clipToOutline="true" />
+                android:clipToPadding="false"
+                android:paddingStart="8dp"
+                android:paddingEnd="8dp"
+                android:scrollbars="horizontal"
+                tools:listitem="@layout/item_file" />
 
-            <!-- Select Image Button -->
             <Button
-                android:id="@+id/selectImageButton"
+                android:id="@+id/selectFilesButton"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Select Image"
+                android:text="Select Files"
                 android:textColor="#FFFFFF"
                 android:layout_marginTop="12dp"
                 android:backgroundTint="#7B1E1E" />
 
-            <!-- Note Title -->
             <EditText
                 android:id="@+id/noteTitleEditText"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="24dp"
-                android:hint="Enter note title"
                 android:background="@drawable/edittext_background"
+                android:hint="Enter note title"
+                android:minHeight="48dp"
                 android:padding="12dp"
                 android:textColor="#000000"
                 android:textSize="16sp" />
 
-            <!-- Description -->
             <EditText
                 android:id="@+id/noteDescriptionEditText"
                 android:layout_width="match_parent"
@@ -94,7 +79,6 @@
                 android:textColor="#000000"
                 android:textSize="16sp" />
 
-            <!-- Upload Button -->
             <Button
                 android:id="@+id/uploadButton"
                 android:layout_width="match_parent"
